@@ -1,7 +1,7 @@
-Just Java Sample App
+GenTran
 ===================================
 
-This app displays an order form for coffee. Used in the Udacity Android for Beginners course.
+This app can do simple text to text translations in between a multiple set of languages
 
 Pre-requisites
 --------------
