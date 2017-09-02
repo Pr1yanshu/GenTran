@@ -12,6 +12,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -94,6 +95,12 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/progressBar1"
                 android:paddingTop="15dp"/>
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:onClick="takePic"
+                android:text="TRANSLATE" />
 
         </LinearLayout>
 
@@ -104,4 +111,5 @@
 
 
     </LinearLayout>
+
 </ScrollView>

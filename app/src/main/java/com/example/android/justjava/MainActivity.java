@@ -18,9 +18,11 @@ package com.example.android.justjava;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.util.Log;
@@ -34,6 +36,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 
+
+import com.googlecode.tesseract.android.TessBaseAPI;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,21 +54,29 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import static android.R.attr.bitmap;
 import static android.R.attr.key;
 import static com.example.android.justjava.R.id.spinner;
+import static com.example.android.justjava.R.id.spinner1;
 
 /**
  * This app displays an order form to order coffee.
  */
 public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
-    private Spinner spinner1;
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+    String datapath = "";
+    private TessBaseAPI mTess;
+    private String mlanguage;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
        // progressBar.setVisibility(View.GONE);
+        datapath = getFilesDir() + "/tesseract/";
+        String language = "eng";
+        checkFile(new File(datapath + "tessdata/"));
 
         progressBar=(ProgressBar)findViewById(R.id.progressBar1);
         progressBar.setVisibility(View.GONE);
@@ -99,8 +111,81 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+    private void copyFiles() {
+        try {
 
+            //location we want the file to be at
+            String filepath = datapath + "/tessdata/eng.traineddata";
 
+            //get access to AssetManager
+            AssetManager assetManager = getAssets();
+
+            //open byte streams for reading/writing
+            InputStream instream = assetManager.open("tessdata/eng.traineddata");
+            OutputStream outstream = new FileOutputStream(filepath);
+
+            //copy the file to the location specified by filepath
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = instream.read(buffer)) != -1) {
+                outstream.write(buffer, 0, read);
+            }
+            outstream.flush();
+            outstream.close();
+            instream.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void checkFile(File dir) {
+        //directory does not exist, but we can successfully create it
+        if (!dir.exists() && dir.mkdirs()) {
+            copyFiles();
+        }
+        //The directory exists, but there is no data file in it
+        if (dir.exists()) {
+            String datafilepath = datapath + "/tessdata/eng.traineddata";
+            File datafile = new File(datafilepath);
+            if (!datafile.exists()) {
+                copyFiles();
+            }
+        }
+    }
+    public void takePic(View view) {
+
+        dispatchTakePictureIntent();
+    }
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            mTess = new TessBaseAPI();
+            mTess.init(datapath, "eng");
+            mTess.setImage(imageBitmap);
+            String result = mTess.getUTF8Text();
+            Log.v("OCR Prediction", result);
+            Spinner spinner = (Spinner) findViewById(R.id.spinner);
+            Spinner spinner1 = (Spinner) findViewById(R.id.spinner1);
+            spinner1.setSelection(0);
+            EditText nameField = (EditText) findViewById(R.id.name_field);
+            nameField.setText(result);
+            progressBar.setVisibility(View.VISIBLE);
+            Translation translation = new Translation();
+            translation.execute();
+
+        }
+    }
     private class Translation extends AsyncTask<Void,String,String> {
         EditText nameField = (EditText) findViewById(R.id.name_field);
         Editable nameEditable = nameField.getText();
